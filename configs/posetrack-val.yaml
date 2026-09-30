@@ -1,0 +1,13 @@
+# PoseTrack18 val 推断布局（build_posetrack.py 产出）
+# images/posetrack_val_flat：硬链接场，{vid:06d}{frame:04d}.jpg → stem 全局唯一数值化，
+#   解决 ultralytics save_json image_id=int(stem) 逐视频撞车（每视频帧名都是 000000.jpg…）
+# labels/posetrack_val_flat：YOLO pose 标签（GT v=1→2 可见；未标注帧空文件）
+# val 目录布局 → is_coco=False → PoseMetrics（数值仅存档，M3 无官方对照）
+# GT 合并 JSON（track_id/vid_id/frame/is_labeled）由 temporal.py 直接读
+path: /home/ubuntu/isef/datasets/posetrack18/posetrack_data
+train: images/posetrack_val_flat
+val: images/posetrack_val_flat
+names:
+  0: person
+kpt_shape: [17, 3]
+flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]

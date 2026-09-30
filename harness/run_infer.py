@@ -21,6 +21,7 @@
 用法：
     python harness/run_infer.py --model yolo11s-pose --dataset coco-val --device 0
     python harness/run_infer.py --model round5-3 --dataset crowdpose-val
+    python harness/run_infer.py --model yolo11s-pose --dataset posetrack-val --batch 64
 """
 import argparse
 import json
@@ -56,7 +57,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True, choices=["round5-3", "yolo11s-pose"])
     ap.add_argument("--dataset", required=True,
-                    choices=["coco-val", "crowdpose-val", "ochuman-test"])
+                    choices=["coco-val", "crowdpose-val", "ochuman-test", "posetrack-val"])
     ap.add_argument("--device", default="0")
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--batch", type=int, default=32)
@@ -101,8 +102,9 @@ def main():
         sys.exit(1)
     shutil.move(str(pred_src), str(save_dir / "preds.json"))
 
-    if gt_json:
+    if gt_json and not ds_cfg.get("skip_pycoco"):
         # pycoco 段：官方发布数口径，对同一份 preds 补算（门禁 1 对拍源）
+        # posetrack-val 跳过：无官方 pycoco 对照目标，GT 合并 JSON 仅供 M3 用
         sys.path.insert(0, str(ROOT))
         from harness.pycoco import evaluate_pycoco
 

@@ -18,9 +18,10 @@ datasets:
     gt_json: /home/ubuntu/isef/datasets/ochuman/ochuman_test_gt.json
     status: 就绪
   posetrack-val:
-    # PoseTrack 是每视频独立 COCO JSON（170 个视频 + 3 个 .al 列表文件），不走 data.yaml
-    # 由 temporal.py 直接读 ~/isef/datasets/posetrack18/posetrack_data/annotations/val/
-    data_yaml: null
-    annotations: /home/ubuntu/isef/datasets/posetrack18/posetrack_data/annotations/val
-    images: /home/ubuntu/isef/datasets/posetrack18/images/val
+    # build_posetrack.py 产出：硬链接场（唯一数值 stem 解决 save_json image_id 撞车）
+    # + 合并 GT JSON（id=int(vid)*10000+frame，track_id/vid_id/frame/is_labeled 保留）
+    # skip_pycoco：无官方 pycoco 对照目标，GT 合并 JSON 仅供 temporal.py（M3）用
+    data_yaml: /home/ubuntu/isef/eval-harness/configs/posetrack-val.yaml
+    gt_json: /home/ubuntu/isef/datasets/posetrack18/posetrack_data/annotations/posetrack_val_merged.json
+    skip_pycoco: true
     status: 就绪

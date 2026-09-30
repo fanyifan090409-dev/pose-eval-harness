@@ -29,18 +29,17 @@
 - ultralytics 内部 PoseMetrics 无上述处理 → 同一模型两口径差 20+ 点
 - 复刻引擎（M1 核心）与 pycocotools 原库全量对拍四位小数全等（0.8496/0.5816）
 
-## 数据集接入事实（2026-09-30 实证）
-
-- ultralytics save_json 的 preds image_id = int(文件 stem)、category_id 取数据集类别 id（实测为 1）→ GT json 的 image id 必须与文件 stem 对齐
-- CrowdPose 官方 val json 是 14 点、无 area 字段；build_gt17.py 转换（与训练同源）：
-  MAP 0-11→COCO 5-16，head_top/neck 丢弃（14570 v=1 + 2484 v=0 随之丢弃，非 v 破坏），
-  面部 5 点 v=0 假点，越界 v>0 降 v=0（仅 8 点触发），area=bbox 宽高，num_keypoints 重算。
-  转换后 v 分布 0/1/2 = 80898/37020/27041，与训练标签严格一致
-- OCHuman test json 本身 17 点直通；image id 重映射 = int(文件名 stem)；缺失图 001287.jpg
-  及其 1 个标注剔除（2230 图 / 3818 实例）
-- pycoco.py 的 catIds 取自 GT（person=1）；preds category_id=1 实测一致，无需改写
-
 ## 红线（G1 继承）
 
 - 零解剖先验内容；round6 模型不进基准；只用公开数据集；校园视频不进 A
-- PoseTrack val 三个事实：帧间隔 >1 必须断段；GT v 第三位是占位符全 1 不做过滤；keypoints 51=17×3 以各 JSON categories 为准
+- PoseTrack val 数据事实（2026-10-01 实证，改动前必读）：
+  - 推断集 = 硬链接场 images/posetrack_val_flat/，stem `{vid:06d}{frame:04d}` → int(stem) =
+    vid*10000+frame 全局唯一 = GT image_id（ultralytics save_json 数值化 stem 规则对齐）
+  - GT 标注帧结构 = 步长 4 稀疏区 + 中间步长 1 密集窗口 → 帧间隔 >1 必须断段
+    （GT 段 ≥10 帧共 993 条、中位长 31）
+  - GT v∈{0,1}：**v=0 即 (0,0) 占位（34.4% 关键点）**，有效性掩码 = GT v>0 且 pred conf>0
+    （旧说法「v 全 1 不做过滤」已被实证推翻）；1030 个 ann 无 bbox（全 v=0 空壳）已跳过
+  - 标签文件必须与图片 stem 逐字符一致（img2label_path 只换扩展名）；v=1→2、v=0→0
+- M3 平滑双口径（2026-10-01 实证）：`smoothed` = q 域（G1 契约，q_t=p_t/s_t 滤波后反归一化）；
+  `smoothed_px` = 对照（OneEuro 直接施于像素坐标）。q 域反归一化会重注入 GT bbox 尺度噪声
+  （|s_t/s_{t-1}-1| median 0.97%/P95 8.1%）→ 抖动指标不降反升；像素域则全面下降。论文主口径待定
