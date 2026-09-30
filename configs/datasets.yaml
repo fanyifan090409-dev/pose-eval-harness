@@ -11,9 +11,11 @@ datasets:
     status: 就绪
   crowdpose-val:
     data_yaml: /home/ubuntu/isef/eval-harness/configs/crowdpose-val.yaml
+    gt_json: /home/ubuntu/isef/datasets/crowdpose/crowdpose_annotations/crowdpose_val_gt17.json
     status: 就绪
   ochuman-test:
     data_yaml: /home/ubuntu/isef/eval-harness/configs/ochuman-test.yaml
+    gt_json: /home/ubuntu/isef/datasets/ochuman/ochuman_test_gt.json
     status: 就绪
   posetrack-val:
     # PoseTrack 是每视频独立 COCO JSON（170 个视频 + 3 个 .al 列表文件），不走 data.yaml
