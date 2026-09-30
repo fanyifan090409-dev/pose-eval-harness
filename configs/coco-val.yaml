@@ -1,0 +1,12 @@
+# COCO val2017 全量 5000 张（labels 由 coco_to_yolo.py 官方口径全量转换）
+# val 不以 coco/val2017.txt 结尾 → ultralytics 判 is_coco=False →
+# stats 走内部 PoseMetrics（与 crowdpose/ochuman 同引擎，历史 bench 同口径）
+# 官方发布数口径（pycocotools keypoints AP）由 run_infer 用 pycocotools 2.0.11
+# 对同一份 preds.json 补算 → official.json 的 pycoco 段（门禁 1 对拍源）
+path: /home/ubuntu/isef/datasets/coco2017/yolo-val
+train: /home/ubuntu/isef/datasets/coco2017/train2017
+val: images/val2017
+names:
+  0: person
+kpt_shape: [17, 3]
+flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
