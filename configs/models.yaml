@@ -1,0 +1,6 @@
+# G2 模型配置（T1 已核对存在性：2026-09-30 两权重均在）
+models:
+  round5-3:                              # 数据轮最优（round6 不进 A 基准，红线）
+    weights: /home/ubuntu/isef/runs/pose-round5-3/weights/best.pt
+  yolo11s-pose:                          # 官方 pretrained（ultralytics 发布权重）
+    weights: /home/ubuntu/isef/weights/yolo11s-pose.pt

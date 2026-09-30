@@ -1,0 +1,23 @@
+# G2 数据集配置：各评估集的 data.yaml 路径
+# 注：ultralytics pose 的 data.yaml 需含 kpt_shape: [17, 3]；val 标签在 <val 图片目录>/../labels/val
+
+datasets:
+  coco-val:
+    # ⚠️ T2 生成：~/isef/datasets/coco2017/ 是原始 COCO 格式（JSON 标注 + val2017 图片 5000 张）
+    # 门禁 1 要求官方 5000 张口径，需先把 person_keypoints_val2017.json 转 YOLO 标签，
+    # 生成 configs/coco-val.yaml 后启用本项。pose-round3/images/val 只有 4927 张（无标注图被剔除），不可用于门禁 1。
+    data_yaml: /home/ubuntu/isef/eval-harness/configs/coco-val.yaml
+    status: T2-创建
+  crowdpose-val:
+    data_yaml: /home/ubuntu/isef/scripts/crowdpose-val-data.yaml
+    status: 就绪
+  ochuman-test:
+    data_yaml: /home/ubuntu/isef/datasets/ochuman/yolo-test/data.yaml
+    status: 就绪
+  posetrack-val:
+    # PoseTrack 是每视频独立 COCO JSON（170 个视频 + 3 个 .al 列表文件），不走 data.yaml
+    # 由 temporal.py 直接读 ~/isef/datasets/posetrack18/posetrack_data/annotations/val/
+    data_yaml: null
+    annotations: /home/ubuntu/isef/datasets/posetrack18/posetrack_data/annotations/val
+    images: /home/ubuntu/isef/datasets/posetrack18/images/val
+    status: 就绪
