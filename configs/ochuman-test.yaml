@@ -1,0 +1,9 @@
+# OCHuman test（names 历史遗留修复：7 类 → person）
+# 数据路径与原 datasets/ochuman/yolo-test/data.yaml 完全一致
+path: /home/ubuntu/isef/datasets/ochuman/yolo-test
+train: /home/ubuntu/isef/datasets/ochuman/yolo/images/train
+val: /home/ubuntu/isef/datasets/ochuman/yolo-test/images
+names:
+  0: person
+kpt_shape: [17, 3]
+flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
