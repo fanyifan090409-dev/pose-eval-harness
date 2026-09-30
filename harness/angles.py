@@ -14,7 +14,7 @@
   报告灵敏度/特异度/Cohen's κ（κ 自实现），不报绝对检出率
 
 用法：python harness/angles.py --run runs/<run_id>
-输出：metrics.json 的 m2 段
+输出：metrics.json 的 m2 段 + m2_units.json（T6 bootstrap 单元，误差带图像归属）
 """
 import argparse
 import json
@@ -88,7 +88,8 @@ def evaluate_m2(gt_by_img, preds_by_img):
       {joint: {"v2": {"errs": [...], "abs_errs": [...]}, "v1": {...}}}
     compensation：{tau: {"tp":.., "fp":.., "fn":.., "tn":..}}（双膝合并）
     """
-    angles = {j: {"v2": {"errs": [], "abs": []}, "v1": {"errs": [], "abs": []}} for j in JOINTS}
+    angles = {j: {"v2": {"errs": [], "abs": [], "imgs": []},
+                  "v1": {"errs": [], "abs": [], "imgs": []}} for j in JOINTS}
     comp = {t: {"tp": 0, "fp": 0, "fn": 0, "tn": 0} for t in TAUS}
     n_pairs = 0
 
@@ -121,6 +122,7 @@ def evaluate_m2(gt_by_img, preds_by_img):
                 e = t_pred - t_gt
                 angles[jname][vbin]["errs"].append(e)
                 angles[jname][vbin]["abs"].append(abs(e))
+                angles[jname][vbin]["imgs"].append(img_id)  # T6 图像级 bootstrap 单元归属
 
             # 代偿：双膝各自按同侧髋→膝/髋→踝算 φ，双膝合并进混淆矩阵
             for knee in ("left_knee", "right_knee"):
@@ -207,6 +209,12 @@ def main():
 
     angles, comp, n_pairs = evaluate_m2(gt_by_img, preds_by_img)
     m2 = summarize(angles, comp, n_pairs)
+
+    # T6 单元落盘：{joint: {vbin: {"errs": [...], "imgs": [...]}}}，图像级 bootstrap 用
+    units = {j: {vb: {"errs": angles[j][vb]["errs"], "imgs": angles[j][vb]["imgs"]}
+                 for vb in ("v2", "v1")} for j in JOINTS}
+    with open(run_dir / "m2_units.json", "w") as f:
+        json.dump(units, f)
 
     metrics_path = run_dir / "metrics.json"
     metrics = json.load(open(metrics_path)) if metrics_path.is_file() else {}

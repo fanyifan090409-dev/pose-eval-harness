@@ -32,7 +32,7 @@
   全段逐对值池化
 - 平滑精度代价：对替换后的 preds 重跑 evaluate_m1 全量 OKS AP
 
-输出：metrics.json 的 m3 段。
+输出：metrics.json 的 m3 段 + m3_units.json（T6 bootstrap 单元）。
 
 用法：python harness/temporal.py --run runs/<run_id>
 """
@@ -142,14 +142,14 @@ def kp_runs(seg, k):
     return runs
 
 
-def collect_metrics(segments):
-    """对段集合算每关键点指标。
+def segment_units(segments):
+    """T6 单元落盘：每段 {kp_id: {"d": [...], "j": [...]}}（该段该关键点逐对值）。
 
-    返回 (per_kp, pool_d)：per_kp[k][metric] = 段级值列表；pool_d[k] = 逐对 d 池。
+    d/j 为 disp_jitter 原始语义（每 run d 比 j 少 1 个），statistics.py 各自维护偏移。
     """
-    per_kp = {k: {m: [] for m in MEAN_METRICS} for k in range(K)}
-    pool_d = {k: [] for k in range(K)}
+    units = []
     for seg in segments:
+        seg_unit = {}
         for k in range(K):
             d_parts, j_parts = [], []
             for pos, sc, _ in kp_runs(seg, k):
@@ -160,8 +160,28 @@ def collect_metrics(segments):
                 j_parts.append(j)
             if not d_parts:
                 continue
-            d_cat = np.concatenate(d_parts)
-            j_cat = np.concatenate(j_parts)
+            seg_unit[str(k)] = {
+                "d": np.concatenate(d_parts).tolist(),
+                "j": np.concatenate(j_parts).tolist(),
+            }
+        units.append(seg_unit)
+    return units
+
+
+def collect_metrics(segments):
+    """对段集合算每关键点指标（单一来源：segment_units，避免两处实现分叉）。
+
+    返回 (per_kp, pool_d)：per_kp[k][metric] = 段级值列表；pool_d[k] = 逐对 d 池。
+    """
+    per_kp = {k: {m: [] for m in MEAN_METRICS} for k in range(K)}
+    pool_d = {k: [] for k in range(K)}
+    for seg_unit in segment_units(segments):
+        for k in range(K):
+            v = seg_unit.get(str(k))
+            if not v:
+                continue
+            d_cat = np.asarray(v["d"], dtype=np.float64)
+            j_cat = np.asarray(v["j"], dtype=np.float64)
             per_kp[k]["disp_mean"].append(float(d_cat.mean()))
             per_kp[k]["jitter_mean"].append(float(j_cat.mean()))
             pool_d[k].append(d_cat)
@@ -280,6 +300,12 @@ def main():
           f"{min(seg_lens) if seg_lens else 0}/"
           f"{int(np.median(seg_lens)) if seg_lens else 0}/"
           f"{max(seg_lens) if seg_lens else 0}")
+
+    # T6 单元落盘：每段一个 {kp_id: {"d": [...], "j": [...]}}
+    seg_units = segment_units(segments)
+    with open(run_dir / "m3_units.json", "w") as f:
+        json.dump(seg_units, f)
+    print(f"m3_units.json: {len(seg_units)} 段落盘")
 
     # 原始域指标（段固定由原始匹配决定）
     per_kp_raw, pool_raw = collect_metrics(segments)

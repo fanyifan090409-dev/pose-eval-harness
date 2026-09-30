@@ -120,30 +120,32 @@ def ap_from_rows(rows, n_gt):
     return np.array(aps)
 
 
-def evaluate_m1(gt_by_img, preds_by_img):
-    """全量 + v 分层。返回 (full_aps, layer_aps, gt_fracs, gt_person_fracs, n_gt)。"""
-    rows_full = []
-    rows_layer = {L: [] for L in LAYERS}
-    n_gt = 0
-    key_counts = {L: 0 for L in LAYERS}
-    person_counts = {L: 0 for L in LAYERS}
-    total_keys = 0
+def match_rows_by_img(gt_by_img, preds_by_img):
+    """逐图像匹配（evaluate_m1 的匹配循环唯一源，T6 bootstrap 复用）。
 
-    # 必须遍历 GT 图与预测图的并集：dt-only 图同样产生 FP
+    返回 {img_id: (n_gt, key_counts, person_counts, rows_full, rows_layer)}：
+    - n_gt：该图非 ignore GT 数（recall 分母分量）
+    - key_counts/person_counts：{L: 数}，层关键点数 / 含层关键点的 GT 人数
+    - rows_full：[(score, tp(10,bool), fp(10,bool))]；rows_layer：{L: 同结构}
+    门禁 3：分层与全量共用本函数，匹配逻辑不可能分叉。
+    """
+    per_img = {}
     for img_id in set(gt_by_img) | set(preds_by_img):
         anns = gt_by_img.get(img_id, [])
-        n_gt += sum(1 for a in anns if not a["_ignore"])
+        n_gt = sum(1 for a in anns if not a["_ignore"])
+        key_counts = {L: 0 for L in LAYERS}
+        person_counts = {L: 0 for L in LAYERS}
         for a in anns:
             if a["_ignore"]:
                 continue
             vg = np.array(a["keypoints"], dtype=np.float64)[2::3]
-            total_keys += K
             for L in LAYERS:
                 mask = vg == L
                 key_counts[L] += int(mask.sum())
-                person_counts[L] += int(mask.any())  # 层召回天花板证据（论文注释用）
+                person_counts[L] += int(mask.any())
         dets = preds_by_img.get(img_id, [])
         if not dets:
+            per_img[img_id] = (n_gt, key_counts, person_counts, [], {L: [] for L in LAYERS})
             continue
         dets = sorted(dets, key=lambda d: -d["score"])[:MAX_DETS]
         # 复刻 evaluateImg：gt 按 ignore 升序（ignore 在后），ious 列同步重排
@@ -179,10 +181,31 @@ def evaluate_m1(gt_by_img, preds_by_img):
                     for L in LAYERS:
                         fp_l[L][dind, ti] = True
 
-        for di, d in enumerate(dets):
-            rows_full.append((d["score"], tp_f[di], fp_f[di]))
-            for L in LAYERS:
-                rows_layer[L].append((d["score"], tp_l[L][di], fp_l[L][di]))
+        rows_full = [(d["score"], tp_f[di], fp_f[di]) for di, d in enumerate(dets)]
+        rows_layer = {L: [(d["score"], tp_l[L][di], fp_l[L][di]) for di, d in enumerate(dets)]
+                      for L in LAYERS}
+        per_img[img_id] = (n_gt, key_counts, person_counts, rows_full, rows_layer)
+    return per_img
+
+
+def evaluate_m1(gt_by_img, preds_by_img):
+    """全量 + v 分层。返回 (full_aps, layer_aps, gt_fracs, gt_person_fracs, n_gt)。"""
+    per_img = match_rows_by_img(gt_by_img, preds_by_img)
+    rows_full = []
+    rows_layer = {L: [] for L in LAYERS}
+    n_gt = 0
+    key_counts = {L: 0 for L in LAYERS}
+    person_counts = {L: 0 for L in LAYERS}
+    total_keys = 0
+
+    for img_id, (n_i, kc, pc, rf, rl) in per_img.items():
+        n_gt += n_i
+        rows_full.extend(rf)
+        for L in LAYERS:
+            rows_layer[L].extend(rl[L])
+            key_counts[L] += kc[L]
+            person_counts[L] += pc[L]
+        total_keys += sum(kc.values())
 
     full_aps = ap_from_rows(rows_full, n_gt)
     layer_aps = {L: ap_from_rows(rows_layer[L], n_gt) for L in LAYERS}
