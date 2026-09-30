@@ -22,12 +22,12 @@ G2 完成时间 2026-10-01，commit 链 3f08e64 → 10bce88（T1-T8 每任务一
 
 全部公开数据集，GT json 由 build 脚本从官方标注转换（转换规则见各脚本 docstring 与 G1 协议 §1.1）：
 
-| 数据集 | 图片 | GT json（configs/datasets.yaml 指向） | 生成脚本 |
+| 数据集 | 图片 | GT json（configs/datasets.yaml 指向，全部在 datasets 树内） | 生成脚本 |
 |---|---|---|---|
-| COCO val | `/home/ubuntu/isef/datasets/coco2017/val2017/` | `data/gt/person_keypoints_val2017.json`（官方原样） | — |
-| CrowdPose val | `/home/ubuntu/isef/datasets/crowdpose/images/` | `data/gt/crowdpose_val_gt17.json` | harness/build_gt17.py |
-| OCHuman test | `/home/ubuntu/isef/datasets/ochuman/images/` | `data/gt/ochuman_test_gt17.json` | harness/build_gt17.py |
-| PoseTrack val | `/home/ubuntu/isef/datasets/posetrack18/`（硬链接场） | `data/gt/posetrack_val_gt.json` | harness/build_posetrack.py |
+| COCO val | `/home/ubuntu/isef/datasets/coco2017/val2017/` | `/home/ubuntu/isef/datasets/coco2017/annotations/person_keypoints_val2017.json`（官方原样） | — |
+| CrowdPose val | `/home/ubuntu/isef/datasets/crowdpose/images/` | `/home/ubuntu/isef/datasets/crowdpose/crowdpose_annotations/crowdpose_val_gt17.json` | harness/build_gt17.py |
+| OCHuman test | `/home/ubuntu/isef/datasets/ochuman/images/` | `/home/ubuntu/isef/datasets/ochuman/ochuman_test_gt.json` | harness/build_gt17.py |
+| PoseTrack val | `/home/ubuntu/isef/datasets/posetrack18/`（硬链接场） | `/home/ubuntu/isef/datasets/posetrack18/posetrack_data/annotations/posetrack_val_merged.json` | harness/build_posetrack.py |
 
 PoseTrack 硬链接场规则（重建时必读 build_posetrack.py docstring）：文件名 stem `{vid:06d}{frame:04d}` 数值化 → image_id = vid*10000+frame 全局唯一（绕开 ultralytics save_json 逐视频 stem 撞车）；170 视频 20161 图，标注帧 8923。
 
