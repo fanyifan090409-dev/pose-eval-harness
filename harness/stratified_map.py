@@ -121,11 +121,12 @@ def ap_from_rows(rows, n_gt):
 
 
 def evaluate_m1(gt_by_img, preds_by_img):
-    """全量 + v 分层。返回 (full_aps, layer_aps, gt_fracs, n_gt)。"""
+    """全量 + v 分层。返回 (full_aps, layer_aps, gt_fracs, gt_person_fracs, n_gt)。"""
     rows_full = []
     rows_layer = {L: [] for L in LAYERS}
     n_gt = 0
     key_counts = {L: 0 for L in LAYERS}
+    person_counts = {L: 0 for L in LAYERS}
     total_keys = 0
 
     # 必须遍历 GT 图与预测图的并集：dt-only 图同样产生 FP
@@ -138,7 +139,9 @@ def evaluate_m1(gt_by_img, preds_by_img):
             vg = np.array(a["keypoints"], dtype=np.float64)[2::3]
             total_keys += K
             for L in LAYERS:
-                key_counts[L] += int(np.count_nonzero(vg == L))
+                mask = vg == L
+                key_counts[L] += int(mask.sum())
+                person_counts[L] += int(mask.any())  # 层召回天花板证据（论文注释用）
         dets = preds_by_img.get(img_id, [])
         if not dets:
             continue
@@ -184,7 +187,8 @@ def evaluate_m1(gt_by_img, preds_by_img):
     full_aps = ap_from_rows(rows_full, n_gt)
     layer_aps = {L: ap_from_rows(rows_layer[L], n_gt) for L in LAYERS}
     gt_fracs = {L: key_counts[L] / total_keys if total_keys else 0.0 for L in LAYERS}
-    return full_aps, layer_aps, gt_fracs, n_gt
+    gt_person_fracs = {L: person_counts[L] / n_gt if n_gt else 0.0 for L in LAYERS}
+    return full_aps, layer_aps, gt_fracs, gt_person_fracs, n_gt
 
 
 def load_gt_coco(json_path):
@@ -219,7 +223,7 @@ def main():
     for d in preds:
         preds_by_img.setdefault(d["image_id"], []).append(d)
 
-    full_aps, layer_aps, gt_fracs, n_gt = evaluate_m1(gt_by_img, preds_by_img)
+    full_aps, layer_aps, gt_fracs, gt_person_fracs, n_gt = evaluate_m1(gt_by_img, preds_by_img)
 
     official = json.load(open(run_dir / "official.json"))
     pycoco = official.get("pycoco")
@@ -242,6 +246,9 @@ def main():
                 "ap": round(float(layer_aps[L].mean()), 4),
                 "ap50": round(float(layer_aps[L][0]), 4),
                 "gt_frac": round(gt_fracs[L], 4),
+                # 有该层关键点的 GT 人数占比 = 该层 recall 天花板
+                # （CrowdPose v2 层因 head/neck 映射裁剪仅 0.59，AP 系统性低估需论文注明）
+                "gt_person_frac": round(gt_person_fracs[L], 4),
                 "low_sample": bool(gt_fracs[L] < 0.01),  # G1：占比 <1% 样本不足仅参考
             }
             for L in LAYERS
