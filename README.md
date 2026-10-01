@@ -43,3 +43,10 @@ OKS 对这类 GT 用双倍 bbox 距离兜底、maxDets=20。论文所有表格�
 1. 两模型全量 mAP50-95(P)：official.json 的 pycoco 段（pycocotools 2.0.11）vs M1 纯 NumPy 引擎 ≤0.5 点
 2. 自检：GT 角度代预测 → RMSE=0；常数轨迹 → 抖动=0、跳变率=0
 3. 分层实现不改变匹配逻辑（同模型全量 mAP 不因开启分层而变）
+
+## 复现与产物
+
+- **复现契约**：[REPRODUCIBILITY.md](REPRODUCIBILITY.md)——环境、权重、数据、逐条命令、口径与归档，干净机器可全链路重建。
+- **权重与报告**：GitHub Releases 提供 round5-3 best.pt 与 4 数据集评测报告打包；官方 yolo11s-pose 权重见 ultralytics assets release。
+- **论文状态**：论文 A（遮挡分层 + 角度误差 + 时序抖动三盲区评估协议）2026-10 月上 arXiv，届时本仓库转 public。
+- **实验全记录**：训练轮次谱系与数据清单见 [elthan-pose-research](https://github.com/fanyifan090409-dev/elthan-pose-research)。
