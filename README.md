@@ -7,12 +7,12 @@
 ```bash
 conda activate py310
 cd ~/isef/eval-harness
-python harness/run_infer.py --model round5-3 --dataset crowdpose-val   # 推断 + 官方指标
-python harness/stratified_map.py --run runs/<run_id>                    # M1 分层 mAP
-python harness/angles.py --run runs/<run_id>                            # M2 角度 + 代偿
-python harness/temporal.py --run runs/<run_id>                          # M3 时序（PoseTrack）
-python harness/statistics.py --run runs/<run_id>                        # bootstrap + 相关性
-python harness/report.py --run runs/<run_id>                            # JSON + md + 图
+python harness/run_infer.py --model round5-3 --dataset crowdpose-val   # 推断 + 官方指标（run_id = <model>__<dataset>）
+python harness/stratified_map.py --run round5-3__crowdpose-val          # M1 分层 mAP
+python harness/angles.py --run round5-3__crowdpose-val                  # M2 角度 + 代偿
+python harness/temporal.py --run round5-3__posetrack-val                # M3 时序（PoseTrack）
+python harness/statistics.py --dataset crowdpose-val --run-a yolo11s-pose__crowdpose-val --run-b round5-3__crowdpose-val   # bootstrap + 相关性
+python harness/report.py                                                # JSON + md + 图（自动读全部 runs）
 ```
 
 ## 架构
