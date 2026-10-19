@@ -420,6 +420,7 @@ def main():
     ap.add_argument("--run-a", required=True)
     ap.add_argument("--run-b", required=True)
     ap.add_argument("--n-boot", type=int, default=N_BOOT)
+    ap.add_argument("--out", default=None, help="输出路径覆盖（默认 runs/stats__<dataset>.json）")
     args = ap.parse_args()
 
     run_a, run_b = ROOT / "runs" / args.run_a, ROOT / "runs" / args.run_b
@@ -490,7 +491,7 @@ def main():
         stats["m3"] = m3_bootstrap(ua3, ub3, n_boot=args.n_boot)
         print(f"M3 bootstrap 完成: {[k for k in stats['m3'] if k != '_protocol']}")
 
-    out_path = ROOT / "runs" / f"stats__{args.dataset}.json"
+    out_path = ROOT / "runs" / (args.out or f"stats__{args.dataset}.json")
     with open(out_path, "w") as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
     print(f"stats: {out_path}")
